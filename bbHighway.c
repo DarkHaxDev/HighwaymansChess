@@ -182,6 +182,9 @@ U64 not_ab_file = 18229723555195321596ULL;
 // Pawn Attacks Table -> [side][square] -> 2 sides to attack
 U64 pawn_attacks[2][64];
 
+// Knight Attacks Table -> [square] -> White knights and black knights have the same possible attacks
+U64 knight_attacks[64];
+
 // Generate Pawn Attacks -> what square the pawn is on; what side (colour) it is on
 U64 mask_pawn_attacks(int side, int square) {
     // Result Attacks Bitboard
@@ -220,6 +223,57 @@ U64 mask_pawn_attacks(int side, int square) {
     return attacks;
 }
 
+// Generate Knight Attacks -> Square the knight is on.
+U64 mask_knight_attacks(int square) { 
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+    
+    // Piece bitboard
+    U64 bitboard = 0ULL;
+
+    // Set piece on the bitboard
+    set_bit(bitboard, square);
+
+    // Generate knight attacks (15 & 17 for upward or downward motion; need to check a or h files) (10 & 6 for left and right motion upward (flip for downward); need to check ab or hg files)
+    // >> is for upward motion (moving left), << is for downward motion (moving right)
+
+    // Up and down attacks
+    if ((bitboard >> 15) & not_a_file) { // knight attacking upward on h-file check
+        attacks |= (bitboard >> 15);
+    }
+
+    if ((bitboard >> 17) & not_h_file) { // knight attacking upward on a-file
+        attacks |= (bitboard >> 17);
+    }
+
+    if ((bitboard << 15) & not_h_file) { // knight attacking downward on a-file
+        attacks |= (bitboard << 15);
+    }
+
+    if ((bitboard << 17) & not_a_file) { // knight attacking downward on h-file
+        attacks |= (bitboard << 17);
+    }
+
+    // Left and right attacks
+    if ((bitboard >> 10) & not_hg_file) { // knight attacking upper-left on ab-file check
+        attacks |= (bitboard >> 10);
+    }
+
+    if ((bitboard >> 6) & not_ab_file) { // knight attacking upper-right on hg-file check
+        attacks |= (bitboard >> 6);
+    }
+
+    if ((bitboard << 10) & not_ab_file) { // knight attacking lower-right on hg-file check
+        attacks |= (bitboard << 10);
+    }
+
+    if ((bitboard << 6) & not_hg_file) { // knight attacking lower-left on ab-file check
+        attacks |= (bitboard << 6);
+    }
+
+    return attacks;
+}
+
 // Initialize leaper pieces attacks
 void init_leapers_attacks() {
     // Loop over 64 board squares
@@ -227,6 +281,9 @@ void init_leapers_attacks() {
         // Initialize pawn attacks
         pawn_attacks[white][square] = mask_pawn_attacks(white, square);
         pawn_attacks[black][square] = mask_pawn_attacks(black, square);
+
+        // Initialize knight attacks
+        knight_attacks[square] = mask_knight_attacks(square);
     }
 }
 
@@ -245,8 +302,9 @@ int main() {
     init_leapers_attacks();
     // Check pawn attacks (look over 64 board squares)
     for (int square = 0; square < 64; square++) {
-        // Initialize pawn attacks
-        print_bitboard(pawn_attacks[black][square]);
+        // // Initialize pawn attacks
+        // print_bitboard(pawn_attacks[black][square]);
+        print_bitboard(knight_attacks[square]);
     }
 
     // print_bitboard(mask_pawn_attacks(black, a4));
