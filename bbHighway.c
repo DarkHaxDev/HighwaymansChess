@@ -185,6 +185,9 @@ U64 pawn_attacks[2][64];
 // Knight Attacks Table -> [square] -> White knights and black knights have the same possible attacks
 U64 knight_attacks[64];
 
+// King Attacks Table -> [square] -> White and Black Kings have the same possible attack patterns
+U64 king_attacks[64];
+
 // Generate Pawn Attacks -> what square the pawn is on; what side (colour) it is on
 U64 mask_pawn_attacks(int side, int square) {
     // Result Attacks Bitboard
@@ -274,6 +277,53 @@ U64 mask_knight_attacks(int square) {
     return attacks;
 }
 
+U64 mask_king_attacks(int square) { 
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+    
+    // Piece bitboard
+    U64 bitboard = 0ULL;
+
+    // Set piece on the bitboard
+    set_bit(bitboard, square);
+
+    // Generate king attacks (1 for left & right, 8 for up & down, 9 for top-left & bottom-right, 7 for top-right & bottom-left; need to check a or h files for diagonal & horizontal)
+    // >> is for upward motion (moving left), << is for downward motion (moving right)
+
+    // Up and down attacks
+    attacks |= (bitboard >> 8); // Up
+    attacks |= (bitboard << 8); // Down
+
+    // Left and Right attacks
+    if ((bitboard >> 1) & not_h_file) { // king attacking left on a-file check
+        attacks |= (bitboard >> 1);
+    }
+
+    if ((bitboard << 1) & not_a_file) { // king attacking right on h-file
+        attacks |= (bitboard << 1);
+    }
+
+    // Diagonal Attacks
+
+    if ((bitboard >> 9) & not_h_file) { // king attacking top-left on a-file
+        attacks |= (bitboard >> 9);
+    }
+
+    if ((bitboard << 9) & not_a_file) { // king attacking bottom-right on h-file
+        attacks |= (bitboard << 9);
+    }
+
+    if ((bitboard << 7) & not_h_file) { // king attacking bottom-left on a-file
+        attacks |= (bitboard << 7);
+    }
+
+    if ((bitboard >> 7) & not_a_file) { // king attacking top-right on h-file
+        attacks |= (bitboard >> 7);
+    }
+
+    return attacks;
+}
+
 // Initialize leaper pieces attacks
 void init_leapers_attacks() {
     // Loop over 64 board squares
@@ -284,6 +334,9 @@ void init_leapers_attacks() {
 
         // Initialize knight attacks
         knight_attacks[square] = mask_knight_attacks(square);
+
+        // Initialize king attacks
+        king_attacks[square] = mask_king_attacks(square);
     }
 }
 
@@ -304,7 +357,7 @@ int main() {
     for (int square = 0; square < 64; square++) {
         // // Initialize pawn attacks
         // print_bitboard(pawn_attacks[black][square]);
-        print_bitboard(knight_attacks[square]);
+        print_bitboard(king_attacks[square]);
     }
 
     // print_bitboard(mask_pawn_attacks(black, a4));
