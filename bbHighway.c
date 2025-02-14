@@ -39,6 +39,40 @@
 // Set the bit at the target square at 0
 #define pop_bit(bitboard, square) (get_bit(bitboard, square) ? bitboard ^= (1ULL << square) : 0)
 
+// Count bits -> using popcount to take advantage of modern hardware (thanks pedrogodinho4649)
+#define count_bits(bitboard) __builtin_popcountll(bitboard)
+// Find the least significant 1st bit index -> as suggested by yashshingade1593
+#define get_ls1b_index(bitboard) (__builtin_ffsll(bitboard) - 1)
+
+// Other way to count bits (Brian Kernighan's way)
+static inline int BK_count_bits(U64 bitboard) {
+    // bit counter
+    int count = 0;
+
+    // Consecutively reset least significant 1st bits in bitboard (basically the topmost bits in the board representation are continuously set to 0)
+    while (bitboard) { // While bitboard isn't 0
+        // increment count
+        count++;
+
+        // Reset least significant first bit
+        bitboard &= bitboard - 1;
+    }
+
+    return count;
+}
+
+// Other way to get the least significant 1st bit index (LS1B)
+static inline int CMK_get_ls1b_index(U64 bitboard) {
+    // Make sure that the bitboard isn't 0
+    if (bitboard) {
+        // Count trailing bits before LS1B
+        return BK_count_bits((bitboard & ~bitboard + 1) - 1);
+    } else {
+        // Return illegal index
+        return -1;
+    }
+}
+
 // Enumerate (enum) the bitboard squares
 enum {
     a8, b8, c8, d8, e8, f8, g8, h8,
@@ -54,19 +88,19 @@ enum {
 // Sides to move (colours) -> white = 0, black = 1 -> white = false, black = true
 enum { white, black };
 
-/*
-FOR FUTURE USE:
 
-"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8,"
-"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7,"
-"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6,"
-"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5,"
-"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4,"
-"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3,"
-"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2,"
-"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1,"
+const char *square_to_coordinates[] = {
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
+};
 
-*/
+
 
 /******************************************\
 ===========================================
@@ -177,7 +211,7 @@ const U64 not_h_file = 9187201950435737471ULL;
 const U64 not_hg_file = 4557430888798830399ULL;
 
 // Not AB-file (constant)
-U64 not_ab_file = 18229723555195321596ULL;
+const U64 not_ab_file = 18229723555195321596ULL;
 
 // Pawn Attacks Table -> [side][square] -> 2 sides to attack
 U64 pawn_attacks[2][64];
@@ -395,6 +429,100 @@ U64 mask_rook_attacks(int square) {
     return attacks;
 }
 
+// Generate Bishop attacks on the fly
+U64 bishop_attacks_on_the_fly(int square, U64 blockboard) {
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+
+    // initialize rank & files
+
+    int r, f;
+
+    // initialize target rank & files
+    int tr = square / 8;
+    int tf = square % 8;
+
+    // generate bishop attacks
+    for (r = tr + 1, f = tf + 1; r <= 7 && f <= 7; r++, f++) { // Bottom-right sliding
+        attacks |= (1ULL << (r * 8 + f));
+        if ((1ULL << (r * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+    for (r = tr - 1, f = tf + 1; r >= 0 && f <= 7; r--, f++) { // Top-right sliding
+        attacks |= (1ULL << (r * 8 + f));
+        if ((1ULL << (r * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+    for (r = tr + 1, f = tf - 1; r <= 7 && f >= 0; r++, f--) { // Bottom-left sliding
+        attacks |= (1ULL << (r * 8 + f));
+        if ((1ULL << (r * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+    for (r = tr - 1, f = tf - 1; r >= 0 && f >= 0; r--, f--) { // Top-left sliding
+        attacks |= (1ULL << (r * 8 + f));
+        if ((1ULL << (r * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+
+    // Return attack map
+    return attacks;
+}
+
+// Generate rook attacks on the fly
+U64 rook_attacks_on_the_fly(int square, U64 blockboard) {
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+
+    // initialize rank & files
+
+    int r, f;
+
+    // initialize target rank & files
+    int tr = square / 8;
+    int tf = square % 8;
+
+    // generate rook attacks
+    for (r = tr + 1; r <= 7; r++) { // sliding downward
+        attacks |= (1ULL << (r * 8 + tf));
+        if ((1ULL << (r * 8 + tf)) & blockboard) {
+            break;
+        }
+    }
+
+    for (r = tr - 1; r >= 0; r--) { // sliding upward
+        attacks |= (1ULL << (r * 8 + tf));
+        if ((1ULL << (r * 8 + tf)) & blockboard) {
+            break;
+        }
+    }
+
+    for (f = tf + 1; f <= 7; f++) { // sliding to the right
+        attacks |= (1ULL << (tr * 8 + f));
+        if ((1ULL << (tr * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+    for (f = tf - 1; f >= 0; f--) { // sliding to the left
+        attacks |= (1ULL << (tr * 8 + f));
+        if ((1ULL << (tr * 8 + f)) & blockboard) {
+            break;
+        }
+    }
+
+
+    // Return attack map
+    return attacks;
+}
+
 // Initialize leaper pieces attacks
 void init_leapers_attacks() {
     // Loop over 64 board squares
@@ -422,14 +550,37 @@ void init_leapers_attacks() {
 int main() {
     // Defined the bitboard
     // U64 bitboard = 0ULL;
+
+    // Initialize the occupancy bitboard
+    U64 block = 0ULL;
+
+    set_bit(block, d7);
+    set_bit(block, d2);
+    set_bit(block, b4);
+    set_bit(block, g4);
+    print_bitboard(block);
+
+    // print_bitboard(rook_attacks_on_the_fly(d4, block));
+
+    // printf("bit count: %d\n", count_bits(block));
+    printf("    LS1B index: %d\n    coordinate: %s\n", get_ls1b_index(block), square_to_coordinates[get_ls1b_index(block)]);
+
+    // Check if setting bit at that spot gets the right result
+    U64 test = 0ULL;
+    set_bit(test, get_ls1b_index(block));
+    print_bitboard(test);
+
+
+
+
     // Initialize leaper attacks
     // init_leapers_attacks();
     // Check pawn attacks (look over 64 board squares)
-    for (int square = 0; square < 64; square++) {
-        // // Initialize pawn attacks
-        // print_bitboard(pawn_attacks[black][square]);
-        print_bitboard(mask_rook_attacks(square));
-    }
+    // for (int square = 0; square < 64; square++) {
+    //     // // Initialize pawn attacks
+    //     // print_bitboard(pawn_attacks[black][square]);
+    //     print_bitboard(bishop_attacks_on_the_fly(square, bitboard));
+    // }
 
     // print_bitboard(mask_pawn_attacks(black, a4));
     // print_bitboard(mask_bishop_attacks(e4));
