@@ -324,6 +324,77 @@ U64 mask_king_attacks(int square) {
     return attacks;
 }
 
+
+// Mask Bishop Attacks
+U64 mask_bishop_attacks(int square) {
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+
+    // initialize rank & files
+
+    int r, f;
+
+    // initialize target rank & files
+    int tr = square / 8;
+    int tf = square % 8;
+
+    // mask relevant bishop occupany bits -> squares that the bishop can slide to (not the edges!)
+    for (r = tr + 1, f = tf + 1; r <= 6 && f <= 6; r++, f++) { // Bottom-right sliding
+        attacks |= (1ULL << (r * 8 + f));
+    }
+
+    for (r = tr - 1, f = tf + 1; r >= 1 && f <= 6; r--, f++) { // Top-right sliding
+        attacks |= (1ULL << (r * 8 + f));
+    }
+
+    for (r = tr + 1, f = tf - 1; r <= 6 && f >= 1; r++, f--) { // Bottom-left sliding
+        attacks |= (1ULL << (r * 8 + f));
+    }
+
+    for (r = tr - 1, f = tf - 1; r >= 1 && f >= 1; r--, f--) { // Top-left sliding
+        attacks |= (1ULL << (r * 8 + f));
+    }
+
+
+    // Return attack map
+    return attacks;
+}
+
+// Mask rook attacks
+U64 mask_rook_attacks(int square) {
+    // Result Attacks Bitboard
+    U64 attacks = 0ULL;
+
+    // initialize rank & files
+
+    int r, f;
+
+    // initialize target rank & files
+    int tr = square / 8;
+    int tf = square % 8;
+
+    // mask relevant rook occupany bits -> squares that the rook can slide to (not the edges!)
+    for (r = tr + 1; r <= 6; r++) { // sliding downward
+        attacks |= (1ULL << (r * 8 + tf));
+    }
+
+    for (r = tr - 1; r >= 1; r--) { // sliding upward
+        attacks |= (1ULL << (r * 8 + tf));
+    }
+
+    for (f = tf + 1; f <= 6; f++) { // sliding to the right
+        attacks |= (1ULL << (tr * 8 + f));
+    }
+
+    for (f = tf - 1; f >= 1; f--) { // sliding to the left
+        attacks |= (1ULL << (tr * 8 + f));
+    }
+
+
+    // Return attack map
+    return attacks;
+}
+
 // Initialize leaper pieces attacks
 void init_leapers_attacks() {
     // Loop over 64 board squares
@@ -352,16 +423,16 @@ int main() {
     // Defined the bitboard
     // U64 bitboard = 0ULL;
     // Initialize leaper attacks
-    init_leapers_attacks();
+    // init_leapers_attacks();
     // Check pawn attacks (look over 64 board squares)
     for (int square = 0; square < 64; square++) {
         // // Initialize pawn attacks
         // print_bitboard(pawn_attacks[black][square]);
-        print_bitboard(king_attacks[square]);
+        print_bitboard(mask_rook_attacks(square));
     }
 
     // print_bitboard(mask_pawn_attacks(black, a4));
-
+    // print_bitboard(mask_bishop_attacks(e4));
 
     // bitboard |= (1ULL << e2);
     // Setting some bits
