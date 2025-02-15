@@ -539,6 +539,33 @@ void init_leapers_attacks() {
     }
 }
 
+// Set Occupancies -> index, number of bits in the attack mask, and the attack mask itself
+// Basically, the occupancy bitboard holds all possible positions for the given attack mask to be blocked!
+// In other words, a 1 on the board simply means that there's a piece there (that will block the attack mask's piece from reaching the edges of the board)
+// To put it fancily, this calculates the enumeration of all possible blocker configurations for sliding pieces!
+U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
+    // Initialize occupancy map
+    U64 occupancy = 0ULL;
+
+    // Loop over the range of bits within the attack mask
+    for (int count = 0; count < bits_in_mask; count++) {
+        // Get LS1B index of attack mask
+        int square = get_ls1b_index(attack_mask);
+
+        // Pop the LS1B in the attack map
+        pop_bit(attack_mask, square);
+
+        // Make sure that occupancy is on the board
+        if (index & (1 << count)) {
+            // Populate occupancy map
+            set_bit(occupancy, square);
+        }
+    }
+
+    // return occupancy map
+    return occupancy;
+}
+
 /******************************************\
 ===========================================
 
@@ -549,26 +576,37 @@ void init_leapers_attacks() {
 
 int main() {
     // Defined the bitboard
+    init_leapers_attacks();
     // U64 bitboard = 0ULL;
 
-    // Initialize the occupancy bitboard
-    U64 block = 0ULL;
+    // Mask piece attacks at given square
+    // U64 attack_mask = mask_rook_attacks(a1);
 
-    set_bit(block, d7);
-    set_bit(block, d2);
-    set_bit(block, b4);
-    set_bit(block, g4);
-    print_bitboard(block);
+
+    // // Loop over occupancy indices
+    // for (int index = 0; index < 4096; index++) {
+    //     // Initialize the occupancy bitboard
+    //     U64 occupancy = set_occupancy(index, count_bits(attack_mask), attack_mask);
+    //     print_bitboard(occupancy);
+    //     getchar();
+    // }
+    
+    
+
+
+
+    // set_bit(block, d7);
+    // set_bit(block, d2);
+    // set_bit(block, b4);
+    // set_bit(block, g4);
+    // print_bitboard(block);
 
     // print_bitboard(rook_attacks_on_the_fly(d4, block));
 
     // printf("bit count: %d\n", count_bits(block));
-    printf("    LS1B index: %d\n    coordinate: %s\n", get_ls1b_index(block), square_to_coordinates[get_ls1b_index(block)]);
+    // printf("    LS1B index: %d\n    coordinate: %s\n", get_ls1b_index(block), square_to_coordinates[get_ls1b_index(block)]);
 
-    // Check if setting bit at that spot gets the right result
-    U64 test = 0ULL;
-    set_bit(test, get_ls1b_index(block));
-    print_bitboard(test);
+    
 
 
 
