@@ -292,6 +292,139 @@ const int rook_relevant_occ_bits[64] = {
     12,  11,  11,  11,  11,  11,  11,  12,
 };
 
+U64 rook_magic_numbers[64] = {
+    0x8a80104000800020ULL,
+    0x140002000100040ULL,
+    0x2801880a0017001ULL,
+    0x100081001000420ULL,
+    0x200020010080420ULL,
+    0x3001c0002010008ULL,
+    0x8480008002000100ULL,
+    0x2080088004402900ULL,
+    0x800098204000ULL,
+    0x2024401000200040ULL,
+    0x100802000801000ULL,
+    0x120800800801000ULL,
+    0x208808088000400ULL,
+    0x2802200800400ULL,
+    0x2200800100020080ULL,
+    0x801000060821100ULL,
+    0x80044006422000ULL,
+    0x100808020004000ULL,
+    0x12108a0010204200ULL,
+    0x140848010000802ULL,
+    0x481828014002800ULL,
+    0x8094004002004100ULL,
+    0x4010040010010802ULL,
+    0x20008806104ULL,
+    0x100400080208000ULL,
+    0x2040002120081000ULL,
+    0x21200680100081ULL,
+    0x20100080080080ULL,
+    0x2000a00200410ULL,
+    0x20080800400ULL,
+    0x80088400100102ULL,
+    0x80004600042881ULL,
+    0x4040008040800020ULL,
+    0x440003000200801ULL,
+    0x4200011004500ULL,
+    0x188020010100100ULL,
+    0x14800401802800ULL,
+    0x2080040080800200ULL,
+    0x124080204001001ULL,
+    0x200046502000484ULL,
+    0x480400080088020ULL,
+    0x1000422010034000ULL,
+    0x30200100110040ULL,
+    0x100021010009ULL,
+    0x2002080100110004ULL,
+    0x202008004008002ULL,
+    0x20020004010100ULL,
+    0x2048440040820001ULL,
+    0x101002200408200ULL,
+    0x40802000401080ULL,
+    0x4008142004410100ULL,
+    0x2060820c0120200ULL,
+    0x1001004080100ULL,
+    0x20c020080040080ULL,
+    0x2935610830022400ULL,
+    0x44440041009200ULL,
+    0x280001040802101ULL,
+    0x2100190040002085ULL,
+    0x80c0084100102001ULL,
+    0x4024081001000421ULL,
+    0x20030a0244872ULL,
+    0x12001008414402ULL,
+    0x2006104900a0804ULL,
+    0x1004081002402ULL,
+};
+U64 bishop_magic_numbers[64] = {
+    0x40040844404084ULL,
+    0x2004208a004208ULL,
+    0x10190041080202ULL,
+    0x108060845042010ULL,
+    0x581104180800210ULL,
+    0x2112080446200010ULL,
+    0x1080820820060210ULL,
+    0x3c0808410220200ULL,
+    0x4050404440404ULL,
+    0x21001420088ULL,
+    0x24d0080801082102ULL,
+    0x1020a0a020400ULL,
+    0x40308200402ULL,
+    0x4011002100800ULL,
+    0x401484104104005ULL,
+    0x801010402020200ULL,
+    0x400210c3880100ULL,
+    0x404022024108200ULL,
+    0x810018200204102ULL,
+    0x4002801a02003ULL,
+    0x85040820080400ULL,
+    0x810102c808880400ULL,
+    0xe900410884800ULL,
+    0x8002020480840102ULL,
+    0x220200865090201ULL,
+    0x2010100a02021202ULL,
+    0x152048408022401ULL,
+    0x20080002081110ULL,
+    0x4001001021004000ULL,
+    0x800040400a011002ULL,
+    0xe4004081011002ULL,
+    0x1c004001012080ULL,
+    0x8004200962a00220ULL,
+    0x8422100208500202ULL,
+    0x2000402200300c08ULL,
+    0x8646020080080080ULL,
+    0x80020a0200100808ULL,
+    0x2010004880111000ULL,
+    0x623000a080011400ULL,
+    0x42008c0340209202ULL,
+    0x209188240001000ULL,
+    0x400408a884001800ULL,
+    0x110400a6080400ULL,
+    0x1840060a44020800ULL,
+    0x90080104000041ULL,
+    0x201011000808101ULL,
+    0x1a2208080504f080ULL,
+    0x8012020600211212ULL,
+    0x500861011240000ULL,
+    0x180806108200800ULL,
+    0x4000020e01040044ULL,
+    0x300000261044000aULL,
+    0x802241102020002ULL,
+    0x20906061210001ULL,
+    0x5a84841004010310ULL,
+    0x4010801011c04ULL,
+    0xa010109502200ULL,
+    0x4a02012000ULL,
+    0x500201010098b028ULL,
+    0x8040002811040900ULL,
+    0x28000010020204ULL,
+    0x6000020202d0240ULL,
+    0x8918844842082200ULL,
+    0x4010011029020020ULL,
+};
+
 // Pawn Attacks Table -> [side][square] -> 2 sides to attack
 U64 pawn_attacks[2][64];
 
@@ -300,6 +433,19 @@ U64 knight_attacks[64];
 
 // King Attacks Table -> [square] -> White and Black Kings have the same possible attack patterns
 U64 king_attacks[64];
+
+// Bishop Attacks masks
+U64 bishop_masks[64];
+
+// Rook attack masks
+U64 rook_masks[64];
+
+// Bishop Attacks Table -> [square][occupancies] -> occupancies represent number of possible occupancies (blocking an attack). For Bishops, it's 512.
+U64 bishop_attacks[64][512];
+
+// Rook Attacks Table -> [square][occupancies]
+U64 rook_attacks[64][4096];
+
 
 // Generate Pawn Attacks -> what square the pawn is on; what side (colour) it is on
 U64 mask_pawn_attacks(int side, int square) {
@@ -438,7 +584,7 @@ U64 mask_king_attacks(int square) {
 }
 
 
-// Mask Bishop Attacks
+// Mask Bishop Attacks -> All the pieces that a bishop could occupy if it moves (assuming that all squares are not occupied), not including the edges of the board.
 U64 mask_bishop_attacks(int square) {
     // Result Attacks Bitboard
     U64 attacks = 0ULL;
@@ -473,7 +619,7 @@ U64 mask_bishop_attacks(int square) {
     return attacks;
 }
 
-// Mask rook attacks
+// Mask rook attacks -> All the pieces that a bishop could occupy if it moves (assuming that all squares are not occupied), not including the edges of the board.
 U64 mask_rook_attacks(int square) {
     // Result Attacks Bitboard
     U64 attacks = 0ULL;
@@ -508,7 +654,8 @@ U64 mask_rook_attacks(int square) {
     return attacks;
 }
 
-// Generate Bishop attacks on the fly
+// Generate Bishop attacks on the fly -> Basically, where a bishop can really move to given an occupancy board (or rather, a bitboard that has other pieces on it).
+//// Once its attack ray impacts another piece (represented by a bit of 1), it stops right there. Includes the edges of the board.
 U64 bishop_attacks_on_the_fly(int square, U64 blockboard) {
     // Result Attacks Bitboard
     U64 attacks = 0ULL;
@@ -555,7 +702,7 @@ U64 bishop_attacks_on_the_fly(int square, U64 blockboard) {
     return attacks;
 }
 
-// Generate rook attacks on the fly
+// Generate rook attacks on the fly -> Where a rook can really move to given an occupancy board. See the above for a more detailed explanation.
 U64 rook_attacks_on_the_fly(int square, U64 blockboard) {
     // Result Attacks Bitboard
     U64 attacks = 0ULL;
@@ -623,7 +770,10 @@ void init_leapers_attacks() {
 // In other words, a 1 on the board simply means that there's a piece there (that will block the attack mask's piece from reaching the edges of the board)
 // To put it fancily, this calculates the enumeration of all possible blocker configurations for sliding pieces!
 U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
-    // Initialize occupancy map
+    //// Index is an integer that (when looked at as a binary number) specifies which squares in the attack_mask should be considered as presently occupied.
+    //// Remember, the attack_mask is the range of all possible attacks (not including edges) for a given piece.
+    //// This function pretty much wipes the attack_mask clean except for the pieces that block the piece
+    // Initialize occupancy board
     U64 occupancy = 0ULL;
 
     // Loop over the range of bits within the attack mask
@@ -635,6 +785,7 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
         pop_bit(attack_mask, square);
 
         // Make sure that occupancy is on the board
+        //// If the square that was wiped from the attack_mask is supposed to be occupied, then add it to the occupancy board
         if (index & (1 << count)) {
             // Populate occupancy map
             set_bit(occupancy, square);
@@ -645,6 +796,25 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
     return occupancy;
 }
 
+// Get our bishop attacks - Fancy
+static inline U64 get_bishop_attacks(int square, U64 occupancy) {
+    // Get bishop attacks assuming current board occupancy
+    occupancy &= bishop_masks[square];
+    occupancy *= bishop_magic_numbers[square];
+    occupancy >>= 64 - bishop_relevant_occ_bits[square];
+    
+}
+
+static inline U64 get_rook_attacks(int square, U64 occupancy) {
+    // Get rook attacks assuming current board occupancy
+    occupancy &= rook_masks[square];
+    occupancy *= rook_magic_numbers[square];
+    occupancy >>= 64 - rook_relevant_occ_bits[square];
+    
+}
+
+// Get our bishop attacks - Plain
+
 /******************************************\
 ===========================================
 
@@ -653,138 +823,7 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
 ===========================================
 \******************************************/
 
-U64 rook_magic_numbers[64] = {
-    0x8a80104000800020ULL,
-    0x140002000100040ULL,
-    0x2801880a0017001ULL,
-    0x100081001000420ULL,
-    0x200020010080420ULL,
-    0x3001c0002010008ULL,
-    0x8480008002000100ULL,
-    0x2080088004402900ULL,
-    0x800098204000ULL,
-    0x2024401000200040ULL,
-    0x100802000801000ULL,
-    0x120800800801000ULL,
-    0x208808088000400ULL,
-    0x2802200800400ULL,
-    0x2200800100020080ULL,
-    0x801000060821100ULL,
-    0x80044006422000ULL,
-    0x100808020004000ULL,
-    0x12108a0010204200ULL,
-    0x140848010000802ULL,
-    0x481828014002800ULL,
-    0x8094004002004100ULL,
-    0x4010040010010802ULL,
-    0x20008806104ULL,
-    0x100400080208000ULL,
-    0x2040002120081000ULL,
-    0x21200680100081ULL,
-    0x20100080080080ULL,
-    0x2000a00200410ULL,
-    0x20080800400ULL,
-    0x80088400100102ULL,
-    0x80004600042881ULL,
-    0x4040008040800020ULL,
-    0x440003000200801ULL,
-    0x4200011004500ULL,
-    0x188020010100100ULL,
-    0x14800401802800ULL,
-    0x2080040080800200ULL,
-    0x124080204001001ULL,
-    0x200046502000484ULL,
-    0x480400080088020ULL,
-    0x1000422010034000ULL,
-    0x30200100110040ULL,
-    0x100021010009ULL,
-    0x2002080100110004ULL,
-    0x202008004008002ULL,
-    0x20020004010100ULL,
-    0x2048440040820001ULL,
-    0x101002200408200ULL,
-    0x40802000401080ULL,
-    0x4008142004410100ULL,
-    0x2060820c0120200ULL,
-    0x1001004080100ULL,
-    0x20c020080040080ULL,
-    0x2935610830022400ULL,
-    0x44440041009200ULL,
-    0x280001040802101ULL,
-    0x2100190040002085ULL,
-    0x80c0084100102001ULL,
-    0x4024081001000421ULL,
-    0x20030a0244872ULL,
-    0x12001008414402ULL,
-    0x2006104900a0804ULL,
-    0x1004081002402ULL,
-};
-U64 bishop_magic_numbers[64] = {
-    0x40040844404084ULL,
-    0x2004208a004208ULL,
-    0x10190041080202ULL,
-    0x108060845042010ULL,
-    0x581104180800210ULL,
-    0x2112080446200010ULL,
-    0x1080820820060210ULL,
-    0x3c0808410220200ULL,
-    0x4050404440404ULL,
-    0x21001420088ULL,
-    0x24d0080801082102ULL,
-    0x1020a0a020400ULL,
-    0x40308200402ULL,
-    0x4011002100800ULL,
-    0x401484104104005ULL,
-    0x801010402020200ULL,
-    0x400210c3880100ULL,
-    0x404022024108200ULL,
-    0x810018200204102ULL,
-    0x4002801a02003ULL,
-    0x85040820080400ULL,
-    0x810102c808880400ULL,
-    0xe900410884800ULL,
-    0x8002020480840102ULL,
-    0x220200865090201ULL,
-    0x2010100a02021202ULL,
-    0x152048408022401ULL,
-    0x20080002081110ULL,
-    0x4001001021004000ULL,
-    0x800040400a011002ULL,
-    0xe4004081011002ULL,
-    0x1c004001012080ULL,
-    0x8004200962a00220ULL,
-    0x8422100208500202ULL,
-    0x2000402200300c08ULL,
-    0x8646020080080080ULL,
-    0x80020a0200100808ULL,
-    0x2010004880111000ULL,
-    0x623000a080011400ULL,
-    0x42008c0340209202ULL,
-    0x209188240001000ULL,
-    0x400408a884001800ULL,
-    0x110400a6080400ULL,
-    0x1840060a44020800ULL,
-    0x90080104000041ULL,
-    0x201011000808101ULL,
-    0x1a2208080504f080ULL,
-    0x8012020600211212ULL,
-    0x500861011240000ULL,
-    0x180806108200800ULL,
-    0x4000020e01040044ULL,
-    0x300000261044000aULL,
-    0x802241102020002ULL,
-    0x20906061210001ULL,
-    0x5a84841004010310ULL,
-    0x4010801011c04ULL,
-    0xa010109502200ULL,
-    0x4a02012000ULL,
-    0x500201010098b028ULL,
-    0x8040002811040900ULL,
-    0x28000010020204ULL,
-    0x6000020202d0240ULL,
-    0x8918844842082200ULL,
-    0x4010011029020020ULL,
-};
+
 
 
 // Find the appropriate magic number
@@ -807,16 +846,19 @@ U64 find_magic_number(int square, int rel_occ_bits, int bishop_flag) {
     // Initialize Occupancy Indices
     int occupancy_indices = 1 << rel_occ_bits;
 
-    // Loop over occupancy indices
+    // Loop over occupancy indices -> Generate all possible occupancy boards for a given attack mask
     for (int index = 0; index < occupancy_indices; index++) {
-        // Initialize occupancies
+        // Generate the current occupancy board
+        //// By increasing the index, it covers all possible occupancies around the piece. Remember: index is a binary number whose bits inform which possible occupancies are actually occupied (for this occupancy board)
         occupancies[index] = set_occupancy(index, rel_occ_bits, attack_mask);
 
-        // Initialize attacks
+        // Generate the possible attacks for the bishop/rook given the current occupancy board
+        //// Different occupancy boards can have the same possible attacks. Pieces that block an attack by a rook for example might have another piece behind them. However, even if that other piece isn't present in another
+        //// occupancy board, it won't affect how the blocking piece blocks the rook's attack, thus resulting in the same possible attack board.
         attacks[index] = bishop_flag ? bishop_attacks_on_the_fly(square, occupancies[index]) : rook_attacks_on_the_fly(square, occupancies[index]);
     }
 
-    // Test magic numbers loop
+    // Test magic numbers loop -> really high number to try and make sure that each occupancy index has their corresponding magic number
     for (int random_count = 0; random_count < 100000000; random_count++) {
         // Generate magic number candidate
         U64 magic_number = generate_magic_number();
@@ -832,9 +874,15 @@ U64 find_magic_number(int square, int rel_occ_bits, int bishop_flag) {
         // Initialize index & fail flag (for failed magic number, which return a 0 for it instead of the number)
         int index, fail;
 
-        // test magic index loop
+        // test magic index loop -> looks over all possible occupancy indices (occupancy boards)
         for (index = 0, fail = 0; !fail && index < occupancy_indices; index++) {
             // Initialize magic index
+            //// occupancies (all possible occupancy boards for the given square & piece).
+            //// occupancies[index] = current occupancy board -> U64 bitboard
+            //// Essentially, we multiply the magic number by the occupancy bitboard to spread bits across the 64-bit register in a pseudo-random way
+            // -> The right shift gets rid of irrelevant occupancy bits (keeps the index in the range of 0 to 2^(rel_occ_bits) - 1), keeping the topmost rel_occ_bits. rel_occ_bits is the number of bits required to index the attack table.
+            // Remember, for a square that has 4096 possible occupancy boards (associated with 4096 possible attacks), we need an index that could get us to the associated attack for each.
+            // This means we would need an index between 0 to 4095 (0 to 2^(rel_occ_bits) - 1), or rather, a 2^12 integer. By right shifting the amount of (64 - 12), we would get rid of all the other bits and only keep 12 bits for the index.
             int magic_index = (int)((occupancies[index] * magic_number) >> (64 - rel_occ_bits));
 
             // If the magic index works and the index isn't used
@@ -883,6 +931,110 @@ void initialize_magic_numbers() {
     // }
 }
 
+// Initialize slider piece's attack tables using Fancy Magic Bitboards'
+U64 slider_attacks[8192];
+int rook_offset[64];
+int bishop_offset[64];
+int rook_start_offset;
+// // Returns the offset necessary for rook attack tables to begin
+void init_slider_attacks(int bishop_flag) {
+    // Loop over all 64 squares
+    int table_offset = bishop_flag ? 0 : rook_start_offset;
+    
+    for (int square = 0; square < 64; square++) {
+        // Initialize the bishop & rook masks
+        bishop_masks[square] = mask_bishop_attacks(square);
+        rook_masks[square] = mask_rook_attacks(square);
+
+        // Get the attack mask for the current square & piece type
+        U64 attack_mask = bishop_flag ? bishop_masks[square] : rook_masks[square];
+
+        // Grab relevant occupancy bit count
+        int rel_occ_bits = count_bits(attack_mask);
+
+        // Initialize occupancy indices
+        //// Occupancy indices is essentially the total number of combinations in which a piece can block the attacking rook/bishop from that square
+        //// An occupancy index is an integer that specifies which squares within a given attack mask are currently occupied (from least to most significant bits)
+        //// Essentially, if an attack mask had three possible occupying bits/pieces (or occupied squares), then occupancy_indices will total 2^3 - 1 = 7. Each occupying index would represent a 3 bit number,
+        //// Where the bits specify which squares are occupied (for the purposes of generating combinations of occupancy boards).
+        int occupancy_indices = (1 << rel_occ_bits);
+        printf("%d \n", occupancy_indices);
+        // print(occupancy_indices)
+        
+        // Loop over occupancy indices -> Run through all possible occupancy board combinations for the given attack mask (all possible ways an attack mask could be occupied).
+        for (int index = 0; index < occupancy_indices; index++) {
+            // Initialize current occupancy variation
+            U64 occupancy = set_occupancy(index, rel_occ_bits, attack_mask);
+            // Bishop
+            if (bishop_flag) {
+                // Grab our magic index using the magic numbers
+                int magic_index = (int)((occupancy * bishop_magic_numbers[square]) >> (64 - rel_occ_bits));
+
+                // Use magic index to get our bishop attacks
+                slider_attacks[table_offset + magic_index] = bishop_attacks_on_the_fly(square, occupancy);
+            } else { // Rook
+                // Grab our magic index using the magic numbers
+                int magic_index = (int)((occupancy * rook_magic_numbers[square]) >> (64 - rel_occ_bits));
+
+                // Use magic index to get our rook attacks
+                slider_attacks[table_offset + magic_index] = rook_attacks_on_the_fly(square, occupancy);
+            }
+        }
+        
+        if (bishop_flag) { // Record the proper offset for each square in the appropriate tables
+            bishop_offset[square] = table_offset;
+        } else {
+            rook_offset[square] = table_offset;
+        }
+        table_offset = table_offset + occupancy_indices; // Update the offsets
+        
+    }
+    printf("hello world");
+    if (bishop_flag) { // Sets proper offset for rook attacks to begin -> only useful for initial move generation
+        rook_start_offset = table_offset;
+    }
+}
+
+// Initialize slider piece's attack tables
+void init_slider_attacks_plain(int bishop_flag) {
+    // Loop over 64 squares
+    for (int square = 0; square < 64; square++) {
+        // initialize bishop & rook masks
+        bishop_masks[square] = mask_bishop_attacks(square);
+        rook_masks[square] = mask_rook_attacks(square);
+
+        // initialize current mask
+        U64 attack_mask = bishop_flag ? bishop_masks[square] : rook_masks[square];
+
+        // Grab relevant occupancy bit count
+        int rel_occ_bits = count_bits(attack_mask);
+
+        // Initialize occupancy indices
+        int occupancy_indices = (1 << rel_occ_bits);
+
+        // Loop over occupancy indices
+        for (int index = 0; index < occupancy_indices; index++) {
+            // Initialize current occupancy variation
+            U64 occupancy = set_occupancy(index, rel_occ_bits, attack_mask);
+            // Bishop
+            if (bishop_flag) {
+                // Grab our magic index using the magic numbers
+                int magic_index = (int)((occupancy * bishop_magic_numbers[square]) >> (64 - rel_occ_bits));
+
+                // Use magic index to get our bishop attacks
+                bishop_attacks[square][magic_index] = bishop_attacks_on_the_fly(square, occupancy);
+            } else { // Rook
+                // Grab our magic index using the magic numbers
+                int magic_index = (int)((occupancy * rook_magic_numbers[square]) >> (64 - rel_occ_bits));
+
+                // Use magic index to get our rook attacks
+                rook_attacks[square][magic_index] = rook_attacks_on_the_fly(square, occupancy);
+            }
+        }
+    }
+    
+}
+
 /******************************************\
 ===========================================
 
@@ -894,9 +1046,16 @@ void initialize_magic_numbers() {
 void initialize_all() {
     // initialize leaper pieces atacks
     init_leapers_attacks();
+    
 
     // initialize magic numbers
     // initialize_magic_numbers();
+
+    // Initialize slider attacks
+    init_slider_attacks(bishop);
+    printf("hello world");
+    init_slider_attacks(rook);
+    printf("hello world");
 }
 
 /******************************************\
@@ -913,56 +1072,12 @@ int main() {
 
     
 
+    // define test bitboard
+    U64 occupancy = 0ULL;
+    print_bitboard(occupancy);
 
-    // set_bit(block, d7);
-    // set_bit(block, d2);
-    // set_bit(block, b4);
-    // set_bit(block, g4);
-    // print_bitboard(block);
-
-    // print_bitboard(rook_attacks_on_the_fly(d4, block));
-
-    // printf("bit count: %d\n", count_bits(block));
-    // printf("    LS1B index: %d\n    coordinate: %s\n", get_ls1b_index(block), square_to_coordinates[get_ls1b_index(block)]);
-
-    
-
-
-
-
-    // Initialize leaper attacks
-    // init_leapers_attacks();
-    // Check pawn attacks (look over 64 board squares)
-    // for (int square = 0; square < 64; square++) {
-    //     // // Initialize pawn attacks
-    //     // print_bitboard(pawn_attacks[black][square]);
-    //     print_bitboard(bishop_attacks_on_the_fly(square, bitboard));
-    // }
-
-    // print_bitboard(mask_pawn_attacks(black, a4));
-    // print_bitboard(mask_bishop_attacks(e4));
-
-    // bitboard |= (1ULL << e2);
-    // Setting some bits
-    // set_bit(bitboard, e4);
-    // set_bit(bitboard, e2);
-    // set_bit(bitboard, e1);
-
-    // print_bitboard(bitboard);
-
-    // // Reset bit
-    // pop_bit(bitboard, e4);
-
-    // print_bitboard(bitboard);
-
-    // pop_bit(bitboard, e4);
-
-    // print_bitboard(bitboard);
-
-    // print human readable board.
-    // for (int rank = 8; rank >= 1; rank--) {
-    //     printf("\"a%d\", \"b%d\", \"c%d\", \"d%d\", \"e%d\", \"f%d\", \"g%d\", \"h%d,\"\n", rank, rank, rank, rank, rank, rank, rank, rank);
-    // }
+    // print bishop attacks
+    print_bitboard(get_bishop_attacks(d4, occupancy));
 
     return 0;
 }
