@@ -446,6 +446,21 @@ U64 bishop_attacks[64][512];
 // Rook Attacks Table -> [square][occupancies]
 U64 rook_attacks[64][4096];
 
+// Slider attacks table -> includes bishop & rook attacks; indexable using offset.
+//// Total number of occupancy boards (divined by summing them up; see below) is 107648, which will be the size of our fancy slider attack look up table.
+//// This is compared to the plain method (see above) which has bishop and rook attacks tables, which, in total, uses 294912 bitboards (which aren't all necessary).
+/*
+    int sum = 0;
+    for (int i = 0; i < 64; i++) {
+        sum = sum + (int)(1 << bishop_relevant_occ_bits[i]);
+        sum = sum + (int)(1 << rook_relevant_occ_bits[i]);
+    }
+    printf("Total occupancy boards: %d", sum);
+*/
+U64 slider_attacks[107648];
+int rook_offset[64];
+int bishop_offset[64];
+
 
 // Generate Pawn Attacks -> what square the pawn is on; what side (colour) it is on
 U64 mask_pawn_attacks(int side, int square) {
@@ -785,7 +800,7 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
         pop_bit(attack_mask, square);
 
         // Make sure that occupancy is on the board
-        //// If the square that was wiped from the attack_mask is supposed to be occupied, then add it to the occupancy board
+        //// If the square that was wiped from the attack_mask is supposed to be occupied (according to the bits specified by the index), then add it to the occupancy board
         if (index & (1 << count)) {
             // Populate occupancy map
             set_bit(occupancy, square);
@@ -799,18 +814,20 @@ U64 set_occupancy(int index, int bits_in_mask, U64 attack_mask) {
 // Get our bishop attacks - Fancy
 static inline U64 get_bishop_attacks(int square, U64 occupancy) {
     // Get bishop attacks assuming current board occupancy
+    int offset = bishop_offset[square];
     occupancy &= bishop_masks[square];
     occupancy *= bishop_magic_numbers[square];
     occupancy >>= 64 - bishop_relevant_occ_bits[square];
-    
+    return slider_attacks[offset + occupancy];
 }
 
 static inline U64 get_rook_attacks(int square, U64 occupancy) {
     // Get rook attacks assuming current board occupancy
+    int offset = rook_offset[square];
     occupancy &= rook_masks[square];
     occupancy *= rook_magic_numbers[square];
     occupancy >>= 64 - rook_relevant_occ_bits[square];
-    
+    return slider_attacks[offset + occupancy];
 }
 
 // Get our bishop attacks - Plain
@@ -885,14 +902,20 @@ U64 find_magic_number(int square, int rel_occ_bits, int bishop_flag) {
             // This means we would need an index between 0 to 4095 (0 to 2^(rel_occ_bits) - 1), or rather, a 2^12 integer. By right shifting the amount of (64 - 12), we would get rid of all the other bits and only keep 12 bits for the index.
             int magic_index = (int)((occupancies[index] * magic_number) >> (64 - rel_occ_bits));
 
+            //// Essentially, what the below does is ensure that every magic number is either:
+            //// 1. Pointing to a full attack mask (given the current occupancy board) that only the magic_index points to
+            //// 2. Pointing to a full attack mask that was already previously pointed to by another magic_index, but also is valid given the current occupancy board
+            ///// (2 means that another attack mask exists there, but it'd still work as the proper possible attacks given the current occupancy board, so it's fine.)
             // If the magic index works and the index isn't used
-            if (used_attacks[magic_index] == 0ULL) {
+            if (used_attacks[magic_index] == 0ULL) { // If the magic_index isn't pointing to a full attack mask (given the current occupancy board), then do so.
                 // Set used_attacks at the index to the attacks with the same index
                 used_attacks[magic_index] = attacks[index];
-            } else if (used_attacks[magic_index] != attacks[index]) {
+            } else if (used_attacks[magic_index] != attacks[index]) { // If the magic index points to the incorrect possible attacks given the current occupancy board, then the magic number doesn't work.
                 // Magic index doesn't work
                 fail = 1;
             }
+            // The above ensures that magic numbers will always generate magic indices that will never access an attack mask that isn't suitable for its associated occupancy board.
+            /// Multiple occupancy boards can access the same attack mask without issue, provided its one that's possible given the occupancies.
 
         }
         // If magic number works, return it
@@ -932,9 +955,8 @@ void initialize_magic_numbers() {
 }
 
 // Initialize slider piece's attack tables using Fancy Magic Bitboards'
-U64 slider_attacks[8192];
-int rook_offset[64];
-int bishop_offset[64];
+
+
 int rook_start_offset;
 // // Returns the offset necessary for rook attack tables to begin
 void init_slider_attacks(int bishop_flag) {
@@ -958,7 +980,7 @@ void init_slider_attacks(int bishop_flag) {
         //// Essentially, if an attack mask had three possible occupying bits/pieces (or occupied squares), then occupancy_indices will total 2^3 - 1 = 7. Each occupying index would represent a 3 bit number,
         //// Where the bits specify which squares are occupied (for the purposes of generating combinations of occupancy boards).
         int occupancy_indices = (1 << rel_occ_bits);
-        printf("%d \n", occupancy_indices);
+        // printf("%d \n", occupancy_indices);
         // print(occupancy_indices)
         
         // Loop over occupancy indices -> Run through all possible occupancy board combinations for the given attack mask (all possible ways an attack mask could be occupied).
@@ -989,7 +1011,7 @@ void init_slider_attacks(int bishop_flag) {
         table_offset = table_offset + occupancy_indices; // Update the offsets
         
     }
-    printf("hello world");
+    // printf("hello world");
     if (bishop_flag) { // Sets proper offset for rook attacks to begin -> only useful for initial move generation
         rook_start_offset = table_offset;
     }
@@ -1053,9 +1075,9 @@ void initialize_all() {
 
     // Initialize slider attacks
     init_slider_attacks(bishop);
-    printf("hello world");
+    // printf("hello world");
     init_slider_attacks(rook);
-    printf("hello world");
+    // printf("hello world");
 }
 
 /******************************************\
@@ -1070,6 +1092,8 @@ int main() {
     // Initialize everything
     initialize_all();
 
+    // TO DO: Figure out how many occupancy boards exist (for both rook + bishop pieces) so that I can use it to set up the correct memory for the unified attack table.
+    
     
 
     // define test bitboard
@@ -1077,7 +1101,11 @@ int main() {
     print_bitboard(occupancy);
 
     // print bishop attacks
-    print_bitboard(get_bishop_attacks(d4, occupancy));
+    // set_bit(occupancy, c4);
+    // set_bit(occupancy, d2);
+    // set_bit(occupancy, h4);
+    // set_bit(occupancy, e8);
+    print_bitboard(get_rook_attacks(d4, occupancy));
 
     return 0;
 }
