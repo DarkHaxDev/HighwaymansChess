@@ -18,6 +18,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <locale.h>
+
+#ifdef _WIN64
+    #include <windows.h>
+#endif
 
 // Define bitboard data type
 
@@ -38,7 +43,7 @@
 // Set the bit at the target square to 1 (I think)
 #define set_bit(bitboard, square) (bitboard |= (1ULL) << square)
 // Set the bit at the target square at 0
-#define pop_bit(bitboard, square) (get_bit(bitboard, square) ? bitboard ^= (1ULL << square) : 0)
+#define pop_bit(bitboard, square) ((bitboard) &= ~(1ULL << (square)))
 
 // Count bits -> using popcount to take advantage of modern hardware (thanks pedrogodinho4649)
 #define count_bits(bitboard) __builtin_popcountll(bitboard)
@@ -74,6 +79,14 @@ static inline int CMK_get_ls1b_index(U64 bitboard) {
     }
 }
 
+/******************************************\
+===========================================
+
+        Bitboards Stuff
+
+===========================================
+\******************************************/
+
 // Enumerate (enum) the bitboard squares
 enum {
     a8, b8, c8, d8, e8, f8, g8, h8,
@@ -83,14 +96,19 @@ enum {
     a4, b4, c4, d4, e4, f4, g4, h4,
     a3, b3, c3, d3, e3, f3, g3, h3,
     a2, b2, c2, d2, e2, f2, g2, h2,
-    a1, b1, c1, d1, e1, f1, g1, h1
+    a1, b1, c1, d1, e1, f1, g1, h1,
+    no_sq
 };
 
-// Sides to move (colours) -> white = 0, black = 1 -> white = false, black = true
-enum { white, black };
+// Sides to move (colours) -> white = 0, black = 1 -> white = false, black = true & also there's both
+enum { white, black, both };
 
 // bishop and rook
 enum { rook, bishop };
+
+// Encode pieces
+/// Uppercase for white pieces; lowercase for black pieces
+enum { P, N, B, R, Q, K, p, n, b, r, q, k };
 
 
 const char *square_to_coordinates[] = {
@@ -103,6 +121,72 @@ const char *square_to_coordinates[] = {
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
 };
+
+
+// define piece bitboards
+U64 bitboards[12]; // 6 bitboards for each piece on each side
+
+// Occupancy bitboards
+U64 occupancies[3]; // White, black, and both sides occupancies
+
+// side to move
+int side = -1;
+
+// enpassant square
+int enpassant = no_sq;
+
+// castling rights (4 bit flag)
+/*  Castling Bits Binary Representation
+
+    bin     dec
+    0001    1       white king can castle to the king side
+    0010    2       white king can castle to the queen side
+    0100    4       black king can castle to the king side
+    1000    8       black king can castle to the queen side
+
+    ex.
+    1111        both sides can castle in both directions
+    1001        black king can castle to queen side; white king can castle to king side
+
+*/
+/// Castling enumerations
+enum { wk = 1, wq = 2, bk = 4, bq = 8 };
+
+int castle;
+
+// ASCII pieces
+/// Can be indexed by the piece enumeration (see above)
+char ascii_pieces[12] = "PNBRQKpnbrqk";
+
+// Unicode Pieces
+char *unicode_pieces[12] = {"♙", "♘", "♗", "♖", "♕", "♔", 
+                            "♟", "♞", "♝", "♜", "♛", "♚"};
+
+// Convert ASCII character to encoded unicode constants
+int char_pieces[] = {
+    ['P'] = P,
+    ['N'] = N,
+    ['B'] = B,
+    ['R'] = R,
+    ['Q'] = Q,
+    ['K'] = K,
+    ['p'] = p,
+    ['n'] = n,
+    ['b'] = b,
+    ['r'] = r,
+    ['q'] = q,
+    ['k'] = k,
+};
+
+void enable_unicode_support() {
+    #ifdef _WIN64
+        // set the console output to UTF-8
+        SetConsoleOutputCP(CP_UTF8);
+    #else
+        // set the locale to system default for Mac + Linux
+        setlocale(LC_ALL, "");
+    #endif
+}
 
 /******************************************\
 ===========================================
@@ -1066,6 +1150,9 @@ void init_slider_attacks_plain(int bishop_flag) {
 \******************************************/
 
 void initialize_all() {
+    // initialize unicode stuff
+    enable_unicode_support();
+
     // initialize leaper pieces atacks
     init_leapers_attacks();
     
@@ -1094,18 +1181,37 @@ int main() {
 
     // TO DO: Figure out how many occupancy boards exist (for both rook + bishop pieces) so that I can use it to set up the correct memory for the unified attack table.
     
-    
+    // Set white pawn on e2
+    set_bit(bitboards[P], e2);
+
+    // print white pawn bitboard
+    print_bitboard(bitboards[P]);
+
+    // print piece
+    printf("piece: %c\n", ascii_pieces[P]);
+
+    // print unicode piece
+    printf("piece: %s\n", unicode_pieces[P]);
+
+    printf("piece: %c\n", ascii_pieces[char_pieces['K']]);
+    printf("piece: %s\n", unicode_pieces[char_pieces['K']]);
 
     // define test bitboard
-    U64 occupancy = 0ULL;
-    print_bitboard(occupancy);
+    // U64 occupancy = 0ULL;
+    // print_bitboard(occupancy);
 
-    // print bishop attacks
-    // set_bit(occupancy, c4);
-    // set_bit(occupancy, d2);
-    // set_bit(occupancy, h4);
-    // set_bit(occupancy, e8);
-    print_bitboard(get_rook_attacks(d4, occupancy));
+    // // print bishop attacks
+    // set_bit(occupancy, c5);
+    // set_bit(occupancy, f2);
+    // set_bit(occupancy, g7);
+    // set_bit(occupancy, b2);
+    // set_bit(occupancy, g5);
+    // set_bit(occupancy, e2);
+    // set_bit(occupancy, e7);
+
+    // print_bitboard(get_rook_attacks(e5, occupancy));
+
+    // print_bitboard(get_bishop_attacks(d4, occupancy));
 
     return 0;
 }
