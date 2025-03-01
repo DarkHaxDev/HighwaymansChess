@@ -130,7 +130,7 @@ U64 bitboards[12]; // 6 bitboards for each piece on each side
 U64 occupancies[3]; // White, black, and both sides occupancies
 
 // side to move
-int side = -1;
+int side;
 
 // enpassant square
 int enpassant = no_sq;
@@ -276,6 +276,48 @@ void print_bitboard(U64 bitboard) {
 
     // Print the bitboard as an unsigned decimal number
     printf("     Bitboard: %llud\n\n", bitboard);
+}
+
+// Print the board
+void print_board() {
+    // Print offset for prettification
+    printf("\n");
+    // Loop over the board ranks
+    for (int rank = 0; rank < 8; rank++) {
+        printf("  %d ", 8 - rank);
+        for (int file = 0; file < 8; file++) {
+            // Get the current square
+            int square = rank * 8 + file;
+
+            // Define the piece variable
+            int piece = -1;
+
+            // Loop over all piece bitboards
+            for (int bb_piece = P; bb_piece <= k; bb_piece++) {
+                if (get_bit(bitboards[bb_piece], square)) { // If the current piece type and colour exists on the current square
+                    piece = bb_piece;
+                }
+            }
+            printf(" %s", (piece == -1) ? "." : unicode_pieces[piece]); // "." refers to the string representation of the character '.'
+        }
+        // Print a new line every rank
+        printf("\n");
+    }
+    
+    // print board files
+    printf("\n     a b c d e f g h \n\n");
+
+    // print side to move
+    printf("    Side:      %s\n", !side ? "White" : "Black");
+
+    // Print the enpassant square
+    printf("    Enpass:    %s\n", (enpassant != no_sq) ? square_to_coordinates[enpassant] : "Not Available");
+
+    // Print castling rights
+    printf("    Castling:  %c%c%c%c\n\n", (castle & wk) ? 'K' : '-',
+                                           (castle & wq) ? 'Q' : '-',
+                                           (castle & bk) ? 'k' : '-',
+                                           (castle & bq) ? 'q' : '-');
 }
 
 /******************************************\
@@ -1181,20 +1223,76 @@ int main() {
 
     // TO DO: Figure out how many occupancy boards exist (for both rook + bishop pieces) so that I can use it to set up the correct memory for the unified attack table.
     
-    // Set white pawn on e2
+    // Set white pieces
+    set_bit(bitboards[P], a2);
+    set_bit(bitboards[P], b2);
+    set_bit(bitboards[P], c2);
+    set_bit(bitboards[P], d2);
     set_bit(bitboards[P], e2);
+    set_bit(bitboards[P], f2);
+    set_bit(bitboards[P], g2);
+    set_bit(bitboards[P], h2);
+
+    set_bit(bitboards[R], a1);
+    set_bit(bitboards[R], h1);
+
+    set_bit(bitboards[N], b1);
+    set_bit(bitboards[N], g1);
+
+    set_bit(bitboards[B], c1);
+    set_bit(bitboards[B], f1);
+
+    set_bit(bitboards[Q], d1);
+    set_bit(bitboards[K], e1);
+
+    // Set black pieces
+    set_bit(bitboards[p], a7);
+    set_bit(bitboards[p], b7);
+    set_bit(bitboards[p], c7);
+    set_bit(bitboards[p], d7);
+    set_bit(bitboards[p], e7);
+    set_bit(bitboards[p], f7);
+    set_bit(bitboards[p], g7);
+    set_bit(bitboards[p], h7);
+
+    set_bit(bitboards[r], a8);
+    set_bit(bitboards[r], h8);
+
+    set_bit(bitboards[n], b8);
+    set_bit(bitboards[n], g8);
+
+    set_bit(bitboards[b], c8);
+    set_bit(bitboards[b], f8);
+
+    set_bit(bitboards[q], d8);
+    set_bit(bitboards[k], e8);
 
     // print white pawn bitboard
     print_bitboard(bitboards[P]);
 
     // print piece
-    printf("piece: %c\n", ascii_pieces[P]);
+    // printf("piece: %c\n", ascii_pieces[P]);
 
-    // print unicode piece
-    printf("piece: %s\n", unicode_pieces[P]);
+    // // print unicode piece
+    // printf("piece: %s\n", unicode_pieces[P]);
 
-    printf("piece: %c\n", ascii_pieces[char_pieces['K']]);
-    printf("piece: %s\n", unicode_pieces[char_pieces['K']]);
+    // printf("piece: %c\n", ascii_pieces[char_pieces['K']]);
+    // printf("piece: %s\n", unicode_pieces[char_pieces['K']]);
+
+    // Print chess board
+    side = black;
+    enpassant = e3;
+    castle |= wk;
+    castle |= wq;
+    castle |= bk;
+    castle |= bq;
+    print_board();
+
+    // print all bitboards
+    for (int piece = P; piece <= k; piece++) {
+        // print current piece bitboard
+        print_bitboard(bitboards[piece]);
+    }
 
     // define test bitboard
     // U64 occupancy = 0ULL;
