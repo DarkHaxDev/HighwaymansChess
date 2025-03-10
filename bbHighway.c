@@ -1102,6 +1102,17 @@ static inline U64 get_rook_attacks(int square, U64 occupancy) {
     return slider_attacks[offset + occupancy];
 }
 
+// Get Queen Attacks
+static inline U64 get_queen_attacks(int square, U64 occupancy) {
+    // Initialize result bitboard
+    U64 queen_attacks;
+
+    // Run through bishop and queen attacks, adding them to the queen attacks board.
+    queen_attacks = get_bishop_attacks(square, occupancy); // Add diagonal attacks
+    queen_attacks |= get_rook_attacks(square, occupancy); // Add horizontal and vertical attacks
+    return queen_attacks;
+}
+
 // Get our bishop attacks - Plain
 
 /******************************************\
@@ -1367,19 +1378,5 @@ int main() {
     // Initialize everything
     initialize_all();
 
-    // parse fen
-    parse_fen(cmk_position);
-
-    // print chess board
-    print_board();
-
-    // print white occupancies
-    print_bitboard(occupancies[white]);
-
-    // print black occupancies
-    print_bitboard(occupancies[black]);
-
-    // print both occupancies
-    print_bitboard(occupancies[both]);
     return 0;
 }
